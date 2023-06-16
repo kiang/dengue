@@ -1,5 +1,10 @@
 <?php
 $basePath = dirname(__DIR__);
+
+foreach (glob($basePath . '/docs/daily/*/*.csv') as $csvFile) {
+    unlink($csvFile);
+}
+
 $fh = fopen('https://od.cdc.gov.tw/eic/Dengue_Daily.csv', 'r');
 $header = fgetcsv($fh, 2048);
 $sum = [];
@@ -85,9 +90,9 @@ while ($line = fgetcsv($fh, 2048)) {
     $y = substr($line[0], 0, 4);
     if (!empty($line[22])) {
         $city = str_pad($line[22], 5, '0', STR_PAD_RIGHT);
-    } elseif(!empty($line[5])) {
+    } elseif (!empty($line[5])) {
         $city = $cityCode[$line[5]];
-    } elseif(!empty($line[8])) {
+    } elseif (!empty($line[8])) {
         $city = $cityCode[substr($line[8], 0, 3)];
     } else {
         continue;
