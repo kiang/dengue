@@ -1,7 +1,13 @@
 <?php
 $basePath = dirname(__DIR__);
 
+$yearDivide = date('Y', strtotime('-1 year'));
 foreach (glob($basePath . '/docs/daily/*/*.csv') as $csvFile) {
+    $p = pathinfo($csvFile);
+    $p2 = pathinfo($p['dirname']);
+    if ($p2['filename'] < $yearDivide) {
+        continue;
+    }
     unlink($csvFile);
 }
 
@@ -88,6 +94,9 @@ while ($line = fgetcsv($fh, 2048)) {
         }
     }
     $y = substr($line[0], 0, 4);
+    if ($y < $yearDivide) {
+        continue;
+    }
     if (!empty($line[22])) {
         $city = str_pad($line[22], 5, '0', STR_PAD_RIGHT);
     } elseif (!empty($line[5])) {
