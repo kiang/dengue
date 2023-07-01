@@ -11,7 +11,14 @@ foreach (glob($basePath . '/docs/daily/*/*.csv') as $csvFile) {
     unlink($csvFile);
 }
 
-$fh = fopen('https://od.cdc.gov.tw/eic/Dengue_Daily.csv', 'r');
+$context = stream_context_create([
+    'ssl' => [
+        'verify_peer' => false,
+        'verify_peer_name' => false,
+    ],
+]);
+
+$fh = fopen('https://od.cdc.gov.tw/eic/Dengue_Daily.csv', 'r', false, $context);
 $header = fgetcsv($fh, 2048);
 $sum = [];
 $cityList = [
