@@ -20,7 +20,7 @@ $context = stream_context_create([
 
 $fh = fopen('https://od.cdc.gov.tw/eic/Dengue_Daily.csv', 'r', false, $context);
 $header = fgetcsv($fh, 2048);
-$sum = [];
+$sum = $cunli = [];
 $cityList = [
     "09007" => 0,
     "09020" => 0,
@@ -113,6 +113,7 @@ while ($line = fgetcsv($fh, 2048)) {
     } else {
         continue;
     }
+
     $path = $basePath . '/docs/daily/' . $y;
     if (!file_exists($path)) {
         mkdir($path, 0777, true);
@@ -142,6 +143,12 @@ while ($line = fgetcsv($fh, 2048)) {
         ];
     }
     $sum[$y][$type][$city] += intval($line[18]);
+    if (!empty($line[19])) {
+        if (!isset($cunli[$line[19]])) {
+            $cunli[$line[19]] = 0;
+        }
+        $cunli[$line[19]] += intval($line[18]);
+    }
 }
 
 foreach ($sum as $y => $data) {
@@ -151,3 +158,5 @@ foreach ($sum as $y => $data) {
     $targetFile = $basePath . '/docs/daily/' . $y . '/sum.json';
     file_put_contents($targetFile, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 }
+ksort($cunli);
+file_put_contents($basePath . '/docs/daily/' . $y . '/cunli.json', json_encode($cunli, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
