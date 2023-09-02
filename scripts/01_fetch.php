@@ -134,6 +134,12 @@ while ($line = fgetcsv($fh, 2048)) {
     $type = 'import';
     if ($line[16] === '否') {
         $type = 'local';
+        if (!empty($line[19])) {
+            if (!isset($cunli[$line[19]])) {
+                $cunli[$line[19]] = 0;
+            }
+            $cunli[$line[19]] += intval($line[18]);
+        }
     }
 
     if (!isset($sum[$y])) {
@@ -143,12 +149,6 @@ while ($line = fgetcsv($fh, 2048)) {
         ];
     }
     $sum[$y][$type][$city] += intval($line[18]);
-    if (!empty($line[19])) {
-        if (!isset($cunli[$line[19]])) {
-            $cunli[$line[19]] = 0;
-        }
-        $cunli[$line[19]] += intval($line[18]);
-    }
 }
 
 foreach ($sum as $y => $data) {
