@@ -20,6 +20,10 @@ $context = stream_context_create([
 
 $fh = fopen('https://od.cdc.gov.tw/eic/Dengue_Daily.csv', 'r', false, $context);
 $header = fgetcsv($fh, 2048);
+if(!isset($header[20])) {
+    // data not exist
+    exit();
+}
 $sum = $cunli = [];
 $cityList = [
     "09007" => 0,
