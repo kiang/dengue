@@ -2,6 +2,8 @@
 $basePath = dirname(__DIR__);
 
 $yearDivide = 2025;
+
+// Clean up old daily files for 2025 and later
 foreach (glob($basePath . '/docs/daily/*/*.csv') as $csvFile) {
     $p = pathinfo($csvFile);
     $p2 = pathinfo($p['dirname']);
@@ -9,6 +11,51 @@ foreach (glob($basePath . '/docs/daily/*/*.csv') as $csvFile) {
         continue;
     }
     unlink($csvFile);
+}
+
+// Load geo data for mapping
+$geoFile = dirname($basePath) . '/taiwan_basecode/cunli/s_geo/20250620.json';
+$geoData = json_decode(file_get_contents($geoFile), true);
+$villageMap = [];
+
+// Build village mapping index and collect unique county codes
+$countyCodes = [];
+foreach ($geoData['features'] as $feature) {
+    $props = $feature['properties'];
+    $key = $props['COUNTYNAME'] . '_' . $props['TOWNNAME'] . '_' . $props['VILLNAME'];
+    $villageMap[$key] = [
+        'VILLCODE' => $props['VILLCODE'],
+        'COUNTYCODE' => $props['COUNTYCODE'],
+        'COUNTYNAME' => $props['COUNTYNAME'],
+        'TOWNNAME' => $props['TOWNNAME'],
+        'VILLNAME' => $props['VILLNAME'],
+    ];
+    // Collect unique county codes
+    $countyCodes[$props['COUNTYCODE']] = true;
+}
+
+// Also handle variations in county names
+$countyNameVariations = [
+    '臺北市' => '台北市',
+    '臺中市' => '台中市',
+    '臺南市' => '台南市',
+    '臺東縣' => '台東縣',
+];
+
+foreach ($countyNameVariations as $original => $variation) {
+    foreach ($geoData['features'] as $feature) {
+        $props = $feature['properties'];
+        if ($props['COUNTYNAME'] === $original) {
+            $key = $variation . '_' . $props['TOWNNAME'] . '_' . $props['VILLNAME'];
+            $villageMap[$key] = [
+                'VILLCODE' => $props['VILLCODE'],
+                'COUNTYCODE' => $props['COUNTYCODE'],
+                'COUNTYNAME' => $props['COUNTYNAME'],
+                'TOWNNAME' => $props['TOWNNAME'],
+                'VILLNAME' => $props['VILLNAME'],
+            ];
+        }
+    }
 }
 
 $context = stream_context_create([
@@ -24,31 +71,20 @@ if(!isset($header[20])) {
     // data not exist
     exit();
 }
+
+// Add VILLCODE and COUNTYCODE to header
+$header[] = 'VILLCODE';
+$header[] = 'COUNTYCODE';
+
 $sum = $cunli = [];
-$cityList = [
-    "09007" => 0,
-    "09020" => 0,
-    "10002" => 0,
-    "10004" => 0,
-    "10005" => 0,
-    "10007" => 0,
-    "10008" => 0,
-    "10009" => 0,
-    "10010" => 0,
-    "10013" => 0,
-    "10014" => 0,
-    "10015" => 0,
-    "10016" => 0,
-    "10017" => 0,
-    "10018" => 0,
-    "10020" => 0,
-    "63000" => 0,
-    "64000" => 0,
-    "65000" => 0,
-    "66000" => 0,
-    "67000" => 0,
-    "68000" => 0,
-];
+$countyData = []; // Store data by county code
+
+// Build cityList dynamically from collected county codes
+$cityList = [];
+foreach (array_keys($countyCodes) as $code) {
+    $cityList[$code] = 0;
+}
+ksort($cityList);
 $cityCode = [
     'A13' => '10013',
     'A02' => '10002',
@@ -95,6 +131,13 @@ $cityCode = [
     '連江縣' => '09007',
     '金門縣' => '09020',
 ];
+// Find column indices for residence data
+$countyIndex = array_search('居住縣市', $header);
+$townIndex = array_search('居住鄉鎮', $header);
+$villageIndex = array_search('居住村里', $header);
+$sickDateIndex = array_search('發病日', $header);
+$caseCountIndex = array_search('確定病例數', $header);
+
 while ($line = fgetcsv($fh, 2048)) {
     if (empty($line[0])) {
         continue;
@@ -108,14 +151,50 @@ while ($line = fgetcsv($fh, 2048)) {
     if ($y < $yearDivide) {
         continue;
     }
-    if (!empty($line[22])) {
-        $city = str_pad($line[22], 5, '0', STR_PAD_RIGHT);
-    } elseif (!empty($line[5])) {
-        $city = $cityCode[$line[5]];
-    } elseif (!empty($line[8])) {
-        $city = $cityCode[substr($line[8], 0, 3)];
+    
+    // Try to map location to VILLCODE and COUNTYCODE
+    $villCode = '';
+    $countyCode = '';
+    
+    if (!empty($line[$countyIndex]) && !empty($line[$townIndex]) && !empty($line[$villageIndex])) {
+        $locationKey = $line[$countyIndex] . '_' . $line[$townIndex] . '_' . $line[$villageIndex];
+        if (isset($villageMap[$locationKey])) {
+            $villCode = $villageMap[$locationKey]['VILLCODE'];
+            $countyCode = $villageMap[$locationKey]['COUNTYCODE'];
+        }
+    }
+    
+    // Add VILLCODE and COUNTYCODE to line
+    $line[] = $villCode;
+    $line[] = $countyCode;
+    
+    // Store data by county code for 2025/{COUNTYCODE}.csv
+    if (!empty($countyCode)) {
+        if (!isset($countyData[$countyCode])) {
+            $countyData[$countyCode] = [];
+        }
+        $countyData[$countyCode][] = $line;
+    }
+    
+    // For year 2025 and later, use COUNTYCODE from geo mapping
+    // For older data, use original cityCode logic for backward compatibility
+    if ($y >= $yearDivide) {
+        // For 2025 and later, use mapped county code
+        $city = $countyCode;
+        if (empty($city)) {
+            continue; // Skip if no mapping found
+        }
     } else {
-        continue;
+        // For data before 2025, use original logic
+        if (!empty($line[22])) {
+            $city = str_pad($line[22], 5, '0', STR_PAD_RIGHT);
+        } elseif (!empty($line[5])) {
+            $city = $cityCode[$line[5]];
+        } elseif (!empty($line[8])) {
+            $city = $cityCode[substr($line[8], 0, 3)];
+        } else {
+            continue;
+        }
     }
 
     $path = $basePath . '/docs/daily/' . $y;
@@ -138,11 +217,26 @@ while ($line = fgetcsv($fh, 2048)) {
     $type = 'import';
     if ($line[16] === '否') {
         $type = 'local';
-        if (!empty($line[19])) {
-            if (!isset($cunli[$line[19]])) {
-                $cunli[$line[19]] = 0;
+        
+        // Track cunli data with latest sick date
+        if (!empty($villCode)) {
+            if (!isset($cunli[$villCode])) {
+                $cunli[$villCode] = [
+                    'count' => 0,
+                    'latest_sick_date' => '',
+                ];
             }
-            $cunli[$line[19]] += intval($line[18]);
+            
+            $caseCount = intval($line[$caseCountIndex]);
+            $cunli[$villCode]['count'] += $caseCount;
+            
+            // Update latest sick date
+            if (!empty($line[$sickDateIndex])) {
+                if (empty($cunli[$villCode]['latest_sick_date']) || 
+                    $line[$sickDateIndex] > $cunli[$villCode]['latest_sick_date']) {
+                    $cunli[$villCode]['latest_sick_date'] = $line[$sickDateIndex];
+                }
+            }
         }
     }
 
@@ -152,15 +246,33 @@ while ($line = fgetcsv($fh, 2048)) {
             'import' => $cityList,
         ];
     }
-    $sum[$y][$type][$city] += intval($line[18]);
+    $sum[$y][$type][$city] += intval($line[$caseCountIndex]);
 }
 
+// Write summary files and county-specific CSV files
 foreach ($sum as $y => $data) {
+    $yearPath = $basePath . '/docs/daily/' . $y;
+    
+    // Write sum.json
     foreach ($data as $k => $v) {
         ksort($data[$k]);
     }
-    $targetFile = $basePath . '/docs/daily/' . $y . '/sum.json';
-    file_put_contents($targetFile, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+    file_put_contents($yearPath . '/sum.json', json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+    
+    // Write county-specific CSV files to docs/daily/{year}/
+    if ($y >= $yearDivide) {
+        foreach ($countyData as $countyCode => $lines) {
+            $countyFile = $yearPath . '/' . $countyCode . '.csv';
+            $fh = fopen($countyFile, 'w');
+            fputcsv($fh, $header);
+            foreach ($lines as $line) {
+                fputcsv($fh, $line);
+            }
+            fclose($fh);
+        }
+        
+        // Write cunli summary to docs/daily/{year}/cunli.json
+        ksort($cunli);
+        file_put_contents($yearPath . '/cunli.json', json_encode($cunli, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+    }
 }
-ksort($cunli);
-file_put_contents($basePath . '/docs/daily/' . $y . '/cunli.json', json_encode($cunli, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
