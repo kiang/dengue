@@ -1,7 +1,7 @@
 <?php
 $basePath = dirname(__DIR__);
 
-$yearDivide = 2024;
+$yearDivide = 2025;
 foreach (glob($basePath . '/docs/daily/*/*.csv') as $csvFile) {
     $p = pathinfo($csvFile);
     $p2 = pathinfo($p['dirname']);
