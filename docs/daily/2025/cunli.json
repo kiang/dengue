@@ -1,4 +1,8 @@
 {
+    "10002020023": {
+        "count": 1,
+        "latest_sick_date": "2025\/09\/17"
+    },
     "64000020021": {
         "count": 8,
         "latest_sick_date": "2025\/08\/26"
@@ -12,7 +16,11 @@
         "latest_sick_date": "2025\/08\/28"
     },
     "68000010052": {
+        "count": 3,
+        "latest_sick_date": "2025\/09\/27"
+    },
+    "68000010060": {
         "count": 1,
-        "latest_sick_date": "2025\/09\/15"
+        "latest_sick_date": "2025\/09\/26"
     }
 }
