@@ -168,12 +168,12 @@ while ($line = fgetcsv($fh, 2048)) {
     $line[] = $villCode;
     $line[] = $countyCode;
     
-    // Store data by county code for 2025/{COUNTYCODE}.csv
+    // Store data by county code for {year}/{COUNTYCODE}.csv
     if (!empty($countyCode)) {
-        if (!isset($countyData[$countyCode])) {
-            $countyData[$countyCode] = [];
+        if (!isset($countyData[$y][$countyCode])) {
+            $countyData[$y][$countyCode] = [];
         }
-        $countyData[$countyCode][] = $line;
+        $countyData[$y][$countyCode][] = $line;
     }
     
     // For year 2025 and later, use COUNTYCODE from geo mapping
@@ -220,21 +220,21 @@ while ($line = fgetcsv($fh, 2048)) {
         
         // Track cunli data with latest sick date
         if (!empty($villCode)) {
-            if (!isset($cunli[$villCode])) {
-                $cunli[$villCode] = [
+            if (!isset($cunli[$y][$villCode])) {
+                $cunli[$y][$villCode] = [
                     'count' => 0,
                     'latest_sick_date' => '',
                 ];
             }
-            
+
             $caseCount = intval($line[$caseCountIndex]);
-            $cunli[$villCode]['count'] += $caseCount;
-            
+            $cunli[$y][$villCode]['count'] += $caseCount;
+
             // Update latest sick date
             if (!empty($line[$sickDateIndex])) {
-                if (empty($cunli[$villCode]['latest_sick_date']) || 
-                    $line[$sickDateIndex] > $cunli[$villCode]['latest_sick_date']) {
-                    $cunli[$villCode]['latest_sick_date'] = $line[$sickDateIndex];
+                if (empty($cunli[$y][$villCode]['latest_sick_date']) ||
+                    $line[$sickDateIndex] > $cunli[$y][$villCode]['latest_sick_date']) {
+                    $cunli[$y][$villCode]['latest_sick_date'] = $line[$sickDateIndex];
                 }
             }
         }
@@ -261,18 +261,21 @@ foreach ($sum as $y => $data) {
     
     // Write county-specific CSV files to docs/daily/{year}/
     if ($y >= $yearDivide) {
-        foreach ($countyData as $countyCode => $lines) {
-            $countyFile = $yearPath . '/' . $countyCode . '.csv';
-            $fh = fopen($countyFile, 'w');
-            fputcsv($fh, $header);
-            foreach ($lines as $line) {
-                fputcsv($fh, $line);
+        if (!empty($countyData[$y])) {
+            foreach ($countyData[$y] as $countyCode => $lines) {
+                $countyFile = $yearPath . '/' . $countyCode . '.csv';
+                $fh = fopen($countyFile, 'w');
+                fputcsv($fh, $header);
+                foreach ($lines as $line) {
+                    fputcsv($fh, $line);
+                }
+                fclose($fh);
             }
-            fclose($fh);
         }
-        
+
         // Write cunli summary to docs/daily/{year}/cunli.json
-        ksort($cunli);
-        file_put_contents($yearPath . '/cunli.json', json_encode($cunli, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        $yearCunli = $cunli[$y] ?? [];
+        ksort($yearCunli);
+        file_put_contents($yearPath . '/cunli.json', json_encode($yearCunli, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
     }
 }
