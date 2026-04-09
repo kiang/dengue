@@ -76,7 +76,7 @@ if(!isset($header[20])) {
 $header[] = 'VILLCODE';
 $header[] = 'COUNTYCODE';
 
-$sum = $cunli = [];
+$sum = $cunli = $cunliImported = [];
 $countyData = []; // Store data by county code
 
 // Build cityList dynamically from collected county codes
@@ -238,6 +238,26 @@ while ($line = fgetcsv($fh, 2048)) {
                 }
             }
         }
+    } else {
+        // Track imported cunli data
+        if (!empty($villCode)) {
+            if (!isset($cunliImported[$y][$villCode])) {
+                $cunliImported[$y][$villCode] = [
+                    'count' => 0,
+                    'latest_sick_date' => '',
+                ];
+            }
+
+            $caseCount = intval($line[$caseCountIndex]);
+            $cunliImported[$y][$villCode]['count'] += $caseCount;
+
+            if (!empty($line[$sickDateIndex])) {
+                if (empty($cunliImported[$y][$villCode]['latest_sick_date']) ||
+                    $line[$sickDateIndex] > $cunliImported[$y][$villCode]['latest_sick_date']) {
+                    $cunliImported[$y][$villCode]['latest_sick_date'] = $line[$sickDateIndex];
+                }
+            }
+        }
     }
 
     if (!isset($sum[$y])) {
@@ -277,5 +297,10 @@ foreach ($sum as $y => $data) {
         $yearCunli = $cunli[$y] ?? [];
         ksort($yearCunli);
         file_put_contents($yearPath . '/cunli.json', json_encode($yearCunli, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+
+        // Write imported cunli summary to docs/daily/{year}/cunli_imported.json
+        $yearCunliImported = $cunliImported[$y] ?? [];
+        ksort($yearCunliImported);
+        file_put_contents($yearPath . '/cunli_imported.json', json_encode($yearCunliImported, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
     }
 }
