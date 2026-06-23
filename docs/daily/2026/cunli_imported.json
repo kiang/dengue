@@ -39,6 +39,10 @@
         "count": 1,
         "latest_sick_date": "2026\/04\/07"
     },
+    "10007230005": {
+        "count": 1,
+        "latest_sick_date": "2026\/06\/11"
+    },
     "10009010013": {
         "count": 1,
         "latest_sick_date": "2026\/05\/05"
@@ -135,6 +139,10 @@
         "count": 1,
         "latest_sick_date": "2026\/04\/16"
     },
+    "64000320009": {
+        "count": 1,
+        "latest_sick_date": "2026\/06\/20"
+    },
     "65000010017": {
         "count": 1,
         "latest_sick_date": "2026\/02\/13"
@@ -177,7 +185,7 @@
     },
     "65000140011": {
         "count": 1,
-        "latest_sick_date": "2026\/06\/07"
+        "latest_sick_date": "2026\/06\/09"
     },
     "65000170008": {
         "count": 1,
