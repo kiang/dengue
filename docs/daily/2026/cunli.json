@@ -1,4 +1,12 @@
 {
+    "10007010034": {
+        "count": 2,
+        "latest_sick_date": "2026\/09\/26"
+    },
+    "10013010056": {
+        "count": 2,
+        "latest_sick_date": "2026\/10\/09"
+    },
     "64000020019": {
         "count": 1,
         "latest_sick_date": "2026\/06\/09"
@@ -15,6 +23,18 @@
         "count": 1,
         "latest_sick_date": "2026\/05\/23"
     },
+    "64000110003": {
+        "count": 1,
+        "latest_sick_date": "2026\/11\/01"
+    },
+    "64000110006": {
+        "count": 1,
+        "latest_sick_date": "2026\/10\/31"
+    },
+    "64000110007": {
+        "count": 1,
+        "latest_sick_date": "2026\/10\/30"
+    },
     "64000120012": {
         "count": 1,
         "latest_sick_date": "2026\/06\/11"
@@ -23,8 +43,16 @@
         "count": 1,
         "latest_sick_date": "2026\/06\/09"
     },
+    "64000190017": {
+        "count": 3,
+        "latest_sick_date": "2026\/08\/26"
+    },
     "64000270005": {
         "count": 1,
         "latest_sick_date": "2026\/06\/10"
+    },
+    "65000050031": {
+        "count": 1,
+        "latest_sick_date": "2026\/10\/26"
     }
 }
