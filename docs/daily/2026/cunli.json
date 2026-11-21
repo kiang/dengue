@@ -19,13 +19,17 @@
         "count": 1,
         "latest_sick_date": "2026\/06\/11"
     },
+    "64000090002": {
+        "count": 1,
+        "latest_sick_date": "2026\/11\/19"
+    },
     "64000090038": {
         "count": 1,
         "latest_sick_date": "2026\/05\/23"
     },
     "64000110003": {
-        "count": 1,
-        "latest_sick_date": "2026\/11\/01"
+        "count": 2,
+        "latest_sick_date": "2026\/11\/19"
     },
     "64000110006": {
         "count": 1,
